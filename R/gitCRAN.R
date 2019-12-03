@@ -55,7 +55,8 @@
 #'   )
 #' }
 #'
-#' Alternatively, you can set your
+#' Alternatively, you can set your PATs with \link{set_token} and omit the
+#' token parameter (it will pull the token automatically).
 #'
 #' @docType package
 #' @name gitCRAN

@@ -67,6 +67,6 @@ And the actual code:
   )
 }
 
-Alternatively, you can set your
+Alternatively, you can set your PATs with \link{set_token}
 }
 
