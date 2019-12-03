@@ -84,8 +84,12 @@ add_package <- function(repo = ".", package, branch = "master",
   tools::write_PACKAGES(package_dir)
   cat("PACKAGES written to", file.path(package_dir, "PACKAGES"), "\n")
 
-  if (is.null(token))
-    token <- get_token(repo_url)
+  if (is.null(token)) {
+    token_var <- get_token(repo_url)
+  } else {
+    Sys.setenv("PACKAGE_TOKEN" = token)
+    token_var <- "PACKAGE_TOKEN"
+  }
 
   withr::with_dir(repo_dir, {
     git2r::add(repo = repo_dir,
@@ -97,6 +101,6 @@ add_package <- function(repo = ".", package, branch = "master",
 
 
   git2r::commit(repo = repo_dir, paste("Adds", package_name))
-  git2r::push(object = repo_dir, credentials = git2r::cred_token(token),
+  git2r::push(object = repo_dir, credentials = git2r::cred_token(token_var),
               name = "origin", refspec = "refs/heads/master")
 }
