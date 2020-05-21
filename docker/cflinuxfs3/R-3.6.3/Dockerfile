@@ -1,6 +1,6 @@
 FROM cloudfoundry/cflinuxfs3
 
-ENV R_LIBS_USER=/opt/Rlib
+ENV R_LIBS_USER=/opt/R/Rlib
 
 RUN apt update && \
   apt install software-properties-common -y && \
@@ -8,7 +8,7 @@ RUN apt update && \
   add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/' && \
   apt update && \
   apt install -y r-base=3.6.3-1bionic && \
-  mkdir /opt/Rlib
+  mkdir -p $R_LIBS_USER
 
 RUN R -e "options(repos = 'cloud.r-project.org'); install.packages('devtools')"
 
