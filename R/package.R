@@ -34,7 +34,7 @@ normalize_package <- function(package) {
   package_dir
 }
 
-#' Add a package to a repository
+#' Add a package to a git repository
 #'
 #' To use this, the user must have a personal access token (PAT) from the git
 #' provider must be generated for reading and writing.
@@ -66,23 +66,7 @@ add_package <- function(repo = ".", package, branch = "master",
 
   repo_url <- get_repo_url(repo)
 
-  package <- normalize_package(package)
-
-  package_tmp <- devtools::build(package, binary = (type != "source"))
-  cat("Package built\n")
-  package_name <- gsub("_.+$", "", basename(package_tmp))
-
-  package_dir <- file.path(repo_dir, type, "src", "contrib")
-  package_version <- as.character(read.dcf(file.path(package, "DESCRIPTION"),
-                                           fields = "Version"))
-
-  package_tarball <- paste0(package_name, "_", package_version, ".tar.gz")
-
-  file.copy(package_tmp, file.path(package_dir, package_tarball))
-  file.remove(package_tmp)
-
-  tools::write_PACKAGES(package_dir)
-  cat("PACKAGES written to", file.path(package_dir, "PACKAGES"), "\n")
+  package_tarball <- add_package_to_path(path = repo_dir, package = oackage, type = type)
 
   if (is.null(token)) {
     token_var <- get_token(repo_url)
@@ -103,4 +87,45 @@ add_package <- function(repo = ".", package, branch = "master",
   git2r::commit(repo = repo_dir, paste("Adds", package_name))
   git2r::push(object = repo_dir, credentials = git2r::cred_token(token_var),
               name = "origin", refspec = "refs/heads/master")
+}
+
+#' Add a package to a local path
+#'
+#' @param path character - A local directory.
+#' @param package character - An R package in a directory, a git remote to a
+#' repo containing an R package, or a link to a package in a CRAN repo.
+#' @param type character - What directory to group the repository under. If not
+#' "source", the default, then it compiles the package as a binary but still
+#' adds it to the {type}/src/contrib/ directory.
+#'
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#'   add_package_to_path(
+#'     "path/on/disk",
+#'     "github.com/thomascjohnson/gitCRAN",
+#'     type = "cflinuxfs3"
+#'   )
+#' }
+add_package_to_path <- function(path = ".", package, type = "source") {
+  package <- normalize_package(package)
+
+  package_tmp <- devtools::build(package, binary = (type != "source"))
+  cat("Package built\n")
+  package_name <- gsub("_.+$", "", basename(package_tmp))
+
+  package_dir <- file.path(path, type, "src", "contrib")
+  package_version <- as.character(read.dcf(file.path(package, "DESCRIPTION"),
+                                           fields = "Version"))
+
+  package_tarball <- paste0(package_name, "_", package_version, ".tar.gz")
+
+  file.copy(package_tmp, file.path(package_dir, package_tarball))
+  file.remove(package_tmp)
+
+  tools::write_PACKAGES(package_dir)
+  cat("PACKAGES written to", file.path(package_dir, "PACKAGES"), "\n")
+
+  package_tarball
 }
