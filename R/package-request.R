@@ -102,7 +102,11 @@ package_request_pipeline <- function(
 
   dir.create(local_repository)
 
-  git2r::clone(gh_repository, local_repository)
+  repo_remote <- sprintf("https://github.com/%s/%s", owner, gh_repository)
+
+  git2r::clone(repo_remote, local_repository)
+
+  CRANpiled::create_repository(local_repository)
 
   available_packages <- available.packages(repos = CRAN_repo)
 
