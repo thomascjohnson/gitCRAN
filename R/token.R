@@ -44,6 +44,8 @@ set_token <- function(provider, token) {
 
   jsonlite::write_json(.gitCRAN$config, get_config_path())
 
+  Sys.chmod(get_config_path(), "600")
+
   load_config()
 
   invisible()

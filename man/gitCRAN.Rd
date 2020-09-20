@@ -3,13 +3,8 @@
 \docType{package}
 \name{gitCRAN}
 \alias{gitCRAN}
-\alias{gitCRAN-package}
 \title{gitCRAN: A package for keeping your internal/custom CRAN repo in a git
 provider like Github, Gitlab, Bitbucket, etc.}
-\description{
-gitCRAN: A package for keeping your internal/custom CRAN repo in a git
-provider like Github, Gitlab, Bitbucket, etc.
-}
 \section{Concept}{
 
 Creating and maintaining a custom/internal CRAN repository requires setting

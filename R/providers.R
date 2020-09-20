@@ -16,7 +16,7 @@ get_provider <- function(repo_url) {
       NULL
   })
 
-  token_provider <- Filter(function(X) !is.null(X), providers)
+  token_provider <- Filter(Negate(is.null), providers)
 
   if (!isTRUE(length(token_provider) > 0))
     stop("Invalid repo url: ", repo_url)
