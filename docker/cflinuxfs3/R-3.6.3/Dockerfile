@@ -11,6 +11,8 @@ RUN apt update && \
   mkdir -p $R_LIBS_USER && \
   mkdir -p /opt/gitCRAN
 
-RUN R -e "options(repos = 'cloud.r-project.org'); install.packages('devtools')"
+RUN R -e "install.packages('devtools', repos = 'cloud.r-project.org')"
+RUN R -e "devtools::install_github('thomascjohnson/CRANpiled')"
+RUN R -e "devtools::install_github('thomascjohnson/gitCRAN')"
 
 WORKDIR /opt/gitCRAN
