@@ -1,20 +1,17 @@
 Package: gitCRAN
 Type: Package
-Title: What the Package Does (Title Case)
-Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
+Title: Create and maintain a CRAN repo in git
+Version: 0.2.0
+Authors@R: c(
+    person("Thomas", "Johnson", , "thomascjohnson@gmail.com", c("aut", "cre"))
+    )
+Description: Host a public or private CRAN repository on Github. Automatically 
+    add packages based on Github issues.
 License: MIT + file LICENSE
 Imports:
     git2r,
-    digest,
-    tools,
-    jsonlite,
-    askpass,
-    devtools,
-    withr
+    httr,
+    CRANpiled
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 6.1.1
+RoxygenNote: 7.1.0
