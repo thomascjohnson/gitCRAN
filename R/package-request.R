@@ -9,7 +9,7 @@ get_issues <- function(owner, repo, labels = NULL,
   if (!is.null(labels)) labels <- paste0(labels, collapse = ",")
 
   issues_req <- httr::GET(
-    paste0("api.github.com", uri),
+    paste0("https://api.github.com", uri),
     query = list(labels = labels, state = state),
     httr::authenticate(username, token)
   )
@@ -53,7 +53,7 @@ parse_package_request <- function(issue_body) {
 
 get_api_user <- function(username, token) {
   user_resp <- httr::GET(
-    paste0("api.github.com", "/user"),
+    paste0("https://api.github.com", "/user"),
     httr::authenticate(username, token)
   )
 
