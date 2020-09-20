@@ -108,11 +108,11 @@ package_request_pipeline <- function(
 
   repo_remote <- sprintf("https://github.com/%s/%s", owner, gh_repository)
 
-  git2r::clone(repo_remote, local_repository)
+  git2r_repo <- git2r::clone(repo_remote, local_repository)
 
   api_user <- get_api_user(username, token)
 
-  git2r::config(local_repository, user.name = api_user$login,
+  git2r::config(git2r_repo, user.name = api_user$login,
                 user.email = api_user$email)
 
   CRANpiled::create_repository(local_repository)
@@ -126,13 +126,13 @@ package_request_pipeline <- function(
     quiet = FALSE
   )
 
-  git2r::add(local_repository, ".")
+  git2r::add(git2r_repo, ".")
 
   git2r::commit(
-    local_repository, paste("Adds", packages_added, collapse = ", ")
+    git2r_repo, paste("Adds", packages_added, collapse = ", ")
   )
 
-  git2r::push(local_repository)
+  git2r::push(git2r_repo)
 }
 
 
