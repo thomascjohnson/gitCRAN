@@ -1,7 +1,3 @@
-make_host <- function(username, token) {
-  sprintf("https://%s:%s@api.github.com", username, token)
-}
-
 get_issues <- function(owner, repo, labels = NULL,
                        state = c("open", "closed", "all"),
                        username = Sys.getenv("GITHUB_USER"),
@@ -10,13 +6,12 @@ get_issues <- function(owner, repo, labels = NULL,
 
   uri <- sprintf("/repos/%s/%s/issues", owner, repo)
 
-  host <- make_host(username, token)
-
   if (!is.null(labels)) labels <- paste0(labels, collapse = ",")
 
   issues_req <- httr::GET(
-    paste0(host, uri),
-    query = list(labels = labels, state = state)
+    paste0("api.github.com", uri),
+    query = list(labels = labels, state = state),
+    httr::authenticate(username, token)
   )
 
   httr::content(issues_req, as = "parsed")
@@ -54,6 +49,15 @@ parse_package_request <- function(issue_body) {
   packages_csv <- issue_dcf[["Package"]]
 
   unique(strsplit(packages_csv, ",\\s*")[[1]])
+}
+
+get_api_user <- function(username, token) {
+  user_resp <- httr::GET(
+    paste0("api.github.com", "/user"),
+    httr::authenticate(username, token)
+  )
+
+  httr::content(user_resp, as = "parsed")
 }
 
 #' Handle Package Requests from Issues Automatically
@@ -105,6 +109,11 @@ package_request_pipeline <- function(
   repo_remote <- sprintf("https://github.com/%s/%s", owner, gh_repository)
 
   git2r::clone(repo_remote, local_repository)
+
+  api_user <- get_api_user(username, token)
+
+  git2r::config(local_repository, user.name = api_user$login,
+                user.email = api_user$email)
 
   CRANpiled::create_repository(local_repository)
 
