@@ -132,7 +132,7 @@ package_request_pipeline <- function(
     git2r_repo, paste("Adds", packages_added, collapse = ", ")
   )
 
-  git2r::push(git2r_repo, credentials = cred_user_pass(username, token))
+  git2r::push(git2r_repo, credentials = git2r::cred_user_pass(username, token))
 }
 
 
