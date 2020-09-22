@@ -185,8 +185,8 @@ package_request_pipeline <- function(
         "There was an issue processing your package addition request. ",
         "Tagging @thomascjohnson to debug and closing the issue. ",
         "See the logs:\n",
-        "```",
-        e,
+        "```\n",
+        trimws(e),
         "```"
       )
 
