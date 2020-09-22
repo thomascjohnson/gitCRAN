@@ -17,20 +17,55 @@ get_issues <- function(owner, repo, labels = NULL,
   httr::content(issues_req, as = "parsed")
 }
 
-filter_issues <- function(issues) {
-  issues
-}
-
-get_packages <- function(owner, repo, labels = "package-request",
-                         state = "open", username = Sys.getenv("GITHUB_USER"),
-                         token = Sys.getenv("GITHUB_PAT")) {
-  issues <- filter_issues(
-    get_issues(owner, repo, labels, state, username, token)
+get_members <- function(github_org,
+                        username = Sys.getenv("GITHUB_USER"),
+                        token = Sys.getenv("GITHUB_PAT")) {
+  response <- httr::GET(
+    sprintf("https://api.github.com/orgs/%s/members", github_org),
+    httr::authenticate(username, token)
   )
 
-  raw_requests <- lapply(issues, function(issue) parse_package_request(issue$body))
+  sapply(httr::content(response, as = "parsed"), `[[`, "login")
+}
 
-  Reduce(c, raw_requests)
+filter_issues <- function(
+  issues,
+  github_org = Sys.getenv("GITCRAN_FILTER_ORG"),
+  username = Sys.getenv("GITHUB_USER"),
+  token = Sys.getenv("GITHUB_PAT")
+) {
+  if (github_org == username || github_org == "")
+    organization_members <- username
+  else
+    organization_members <- get_members(github_org, username, token)
+
+  Filter(function(x) x$user$login %in% organization_members, issues)
+}
+
+get_package_requests <- function(
+  owner,
+  repo,
+  labels = "package-request",
+  state = "open",
+  filter_org = Sys.getenv("GITCRAN_FILTER_ORG"),
+  username = Sys.getenv("GITHUB_USER"),
+  token = Sys.getenv("GITHUB_PAT")
+) {
+  issues <- filter_issues(
+    issues = get_issues(owner, repo, labels, state, username, token),
+    github_org = filter_org,
+    username = username,
+    token = token
+  )
+
+  raw_requests <- lapply(
+    issues,
+    function(issue) parse_package_request(issue$body)
+  )
+
+  issue_ids <- sapply(issues, `[[`, "number")
+
+  setNames(raw_requests, issue_ids)
 }
 
 read_dcf_text <- function(txt, fields = NULL, all = FALSE, keep.white = NULL) {
@@ -94,8 +129,8 @@ package_request_pipeline <- function(
   stopifnot(nchar(username) > 0)
   stopifnot(nchar(token) > 0)
 
-  packages <- do.call(
-    get_packages,
+  package_requests <- do.call(
+    get_package_requests,
     list(owner = owner, repo = gh_repository, labels = labels, state = state,
          username = username, token = token)
   )
@@ -119,20 +154,72 @@ package_request_pipeline <- function(
 
   available_packages <- available.packages(repos = CRAN_repo)
 
-  packages_added <- CRANpiled::add_packages(
-    packages, local_repository,
-    available_packages,
-    compile = TRUE,
-    quiet = FALSE
+  lapply(names(package_requests), function(package_request_id) {
+    package_request <- package_requests[[package_request_id]]
+
+    tryCatch({
+      packages_added <- CRANpiled::add_packages(
+        package_request,
+        local_repository,
+        available_packages,
+        compile = TRUE,
+        quiet = FALSE
+      )
+
+      git2r::add(git2r_repo, ".")
+
+      git2r::commit(
+        git2r_repo,
+        paste(
+          "Closes #", package_request_id, "\nAdds",
+          paste(packages_added, collapse = ", ")
+        )
+      )
+
+      git2r::push(
+        git2r_repo,
+        credentials = git2r::cred_user_pass(username, token)
+      )
+    }, error = function(e) {
+      error_comment <- paste0(
+        "There was an issue processing your package addition request. ",
+        "Tagging @thomascjohnson to debug and closing the issue. ",
+        "See the logs:",
+        "```",
+        e,
+        "```"
+      )
+
+      create_comment(owner, gh_repository, package_request_id, error_comment,
+                     username, token)
+      close_issue(owner, gh_repository, package_request_id, username, token)
+    })
+  })
+
+  cat("")
+}
+
+create_comment <- function(owner, repository, issue_id, comment, username,
+                           token) {
+  httr::POST(
+    sprintf(
+      "https://api.github.com/repos/%s/%s/issues/%s/comments",
+      owner, repository, issue_id
+    ),
+    body = jsonlite::toJSON(list(body = comment), auto_unbox = TRUE),
+    httr::authenticate(username, token)
   )
+}
 
-  git2r::add(git2r_repo, ".")
-
-  git2r::commit(
-    git2r_repo, paste("Adds", packages_added, collapse = ", ")
+close_issue <- function(owner, repository, issue_id, username, token) {
+  httr::PATCH(
+    sprintf(
+      "https://api.github.com/repos/%s/%s/issues/%s",
+      owner, repository, issue_id
+    ),
+    body = jsonlite::toJSON(list(state = "closed"), auto_unbox = TRUE),
+    httr::authenticate(username, token)
   )
-
-  git2r::push(git2r_repo, credentials = git2r::cred_user_pass(username, token))
 }
 
 
