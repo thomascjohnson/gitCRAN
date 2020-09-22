@@ -170,8 +170,8 @@ package_request_pipeline <- function(
 
       git2r::commit(
         git2r_repo,
-        paste(
-          "Closes #", package_request_id, "\nAdds",
+        paste0(
+          "Closes #", package_request_id, " Adds:\n ",
           paste(packages_added, collapse = ", ")
         )
       )
