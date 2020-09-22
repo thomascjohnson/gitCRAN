@@ -184,7 +184,7 @@ package_request_pipeline <- function(
       error_comment <- paste0(
         "There was an issue processing your package addition request. ",
         "Tagging @thomascjohnson to debug and closing the issue. ",
-        "See the logs:",
+        "See the logs:\n",
         "```",
         e,
         "```"
