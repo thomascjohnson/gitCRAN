@@ -97,12 +97,17 @@ get_api_user <- function(username, token) {
 
 #' Handle Package Requests from Issues Automatically
 #'
-#' Given the
+#' This pipeline fetches issues from a Github repository and if they follow
+#' the form of a package request, the pipeline will try to automatically add
+#' the pakges to the repository. If the additions fail, it will comment on the
+#' issue with the error message, tag the provided username and close the issue.
 #'
 #' @param owner character - Github organization/user name, defaults to the
 #' environment variable GITCRAN_REPO_OWNER
-#' @param gh_repository character, the repository name, defaults to the
+#' @param gh_repository character - the repository name, defaults to the
 #' environment variable GITCRAN_REPO
+#' @param subpath character - a path relative to the gh_repository root that
+#' contains a CRAN repository. Defaults to "": the root of the repository.
 #' @param labels character vector - Github issue labels to search for package
 #' requests, defaults to the environment variable GITCRAN_LABELS
 #' @param state character - Issue state, "open" or "closed", defaults to the
@@ -117,6 +122,7 @@ get_api_user <- function(username, token) {
 package_request_pipeline <- function(
   owner = Sys.getenv("GITCRAN_REPO_OWNER"),
   gh_repository = Sys.getenv("GITCRAN_REPO"),
+  subpath = Sys.getenv("GITCRAN_SUBDIR", ""),
   labels = Sys.getenv("GITCRAN_LABELS", "package-request"),
   state = Sys.getenv("GITCRAN_STATE", "open"),
   username = Sys.getenv("GITHUB_USER"),
@@ -152,12 +158,16 @@ package_request_pipeline <- function(
 
   CRANpiled::create_repository(local_repository)
 
+  if (nchar(subpath) > 0)
+    local_repository <- file.path(local_repository, subpath)
+
   available_packages <- available.packages(repos = CRAN_repo)
 
-  lapply(names(package_requests), function(package_request_id) {
+  for (package_request_id in names(package_requests)) {
     package_request <- package_requests[[package_request_id]]
 
     tryCatch({
+      cat(paste0("Adding packages from request #", package_request_id))
       packages_added <- CRANpiled::add_packages(
         package_request,
         local_repository,
@@ -183,20 +193,20 @@ package_request_pipeline <- function(
     }, error = function(e) {
       error_comment <- paste0(
         "There was an issue processing your package addition request. ",
-        "Tagging @thomascjohnson to debug and closing the issue. ",
+        "Tagging @", username, " to debug and closing the issue. ",
         "See the logs:\n",
         "```\n",
-        trimws(e),
-        "```"
+        trimws(e)
       )
 
+      cat(paste0("Commenting on and closing issue #", package_request_id))
       create_comment(owner, gh_repository, package_request_id, error_comment,
                      username, token)
       close_issue(owner, gh_repository, package_request_id, username, token)
     })
-  })
+  }
 
-  cat("")
+  cat("Pipeline finished.")
 }
 
 create_comment <- function(owner, repository, issue_id, comment, username,
