@@ -149,17 +149,20 @@ package_request_pipeline <- function(
 
   repo_remote <- sprintf("https://github.com/%s/%s", owner, gh_repository)
 
-  git2r_repo <- git2r::clone(repo_remote, local_repository)
+  if (!dir.exists(local_repository))
+    git2r_repo <- git2r::clone(repo_remote, local_repository)
+  else
+    git2r_repo <- git2r::repository(local_repository)
 
   api_user <- get_api_user(username, token)
 
   git2r::config(git2r_repo, user.name = api_user$login,
                 user.email = api_user$email)
 
-  CRANpiled::create_repository(local_repository)
-
   if (nchar(subpath) > 0)
     local_repository <- file.path(local_repository, subpath)
+
+  CRANpiled::create_repository(local_repository)
 
   available_packages <- available.packages(repos = CRAN_repo)
 
