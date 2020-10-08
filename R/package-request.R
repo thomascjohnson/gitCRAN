@@ -145,14 +145,16 @@ package_request_pipeline <- function(
 
   local_repository <- file.path(tempdir(), "gitCRAN")
 
-  dir.create(local_repository)
 
-  repo_remote <- sprintf("https://github.com/%s/%s", owner, gh_repository)
+  if (!dir.exists(local_repository)) {
+    dir.create(local_repository)
 
-  if (!dir.exists(local_repository))
+    repo_remote <- sprintf("https://github.com/%s/%s", owner, gh_repository)
+
     git2r_repo <- git2r::clone(repo_remote, local_repository)
-  else
+  } else {
     git2r_repo <- git2r::repository(local_repository)
+  }
 
   api_user <- get_api_user(username, token)
 
